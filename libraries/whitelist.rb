@@ -53,10 +53,8 @@ class Chef
     #
     # Returns true if the node is in the whitelist and false otherwise
     def is_in_whitelist?(whitelist, data_bag="whitelist", attribute="patterns")
-        if node.run_state["whitelistdb_#{whitelist}"].nil?
-          node.run_state["whitelistdb_#{whitelist}"] = data_bag_item(data_bag, whitelist)
-        end
-        patterns = node.run_state["whitelistdb_#{whitelist}"][attribute] || []
+      whitelist_config = load_whitelist_config(whitelist, data_bag)
+      patterns = whitelist_config[attribute] || []
 
         patterns.each do |pattern|
             if (File.fnmatch?(pattern, self[:fqdn]))
@@ -64,8 +62,9 @@ class Chef
                 return true
             end
         end
-        if node.run_state["whitelistdb_#{whitelist}"].has_key?( "roles" )
-            roles = node.run_state["whitelistdb_#{whitelist}"]["roles"]
+
+        if whitelist_config.has_key?( "roles" )
+            roles = whitelist_config["roles"]
             node_found_in_role = search_node_in_roles( roles )
             if node_found_in_role
                 Chef::Log.info "Whitelisting: Found node '#{self[:fqdn]}' via role search for whitelist '#{whitelist}'."
@@ -104,6 +103,21 @@ class Chef
 
         return false
 
+    end
+
+    private
+
+    def load_whitelist_config(whitelist, data_bag)
+      if node.run_state["whitelistdb_#{whitelist}"].nil?
+        begin
+          node.run_state["whitelistdb_#{whitelist}"] = data_bag_item(data_bag, whitelist)
+        rescue Net::HTTPServerException, Chef::Exceptions::InvalidDataBagPath
+          node.run_state["whitelistdb_#{whitelist}"] = { }
+          Chef::Log.error "Problem loading `#{whitelist}` in `#{data_bag}` for chef-whitelist library, defaulting to empty whitelist configuration"
+        end
+      end
+
+      node.run_state["whitelistdb_#{whitelist}"]
     end
 
   end

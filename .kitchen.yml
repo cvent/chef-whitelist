@@ -1,0 +1,15 @@
+---
+driver:
+  name: docker
+
+provisioner:
+  name: chef_zero
+
+platforms:
+  - name: centos-7.0
+
+suites:
+  - name: default
+    data_bags_path: "test/integration/data_bags"
+    run_list:
+      - recipe[chef-whitelist]
