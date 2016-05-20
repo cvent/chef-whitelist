@@ -57,7 +57,7 @@ class Chef
       patterns = whitelist_config[attribute] || []
 
         patterns.each do |pattern|
-            if (File.fnmatch?(pattern, self[:fqdn]))
+            if (File.fnmatch?(pattern, self[:fqdn] || ''))
                 Chef::Log.info "Whitelisting: Matched pattern '#{pattern}' to host '#{self[:fqdn]}' for whitelist '#{whitelist}'."
                 return true
             end
